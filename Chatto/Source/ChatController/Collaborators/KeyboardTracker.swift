@@ -116,14 +116,24 @@ class KeyboardTracker {
         self.keyboardStatus = .hidden
         self.layoutInputAtBottom()
     }
-
+    
     private func bottomConstraintFromNotification(_ notification: Notification) -> CGFloat {
+        let offsetY = UIApplication.shared.statusBarFrame.height - 20
         guard let rect = ((notification as NSNotification).userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return 0 }
         guard rect.height > 0 else { return 0 }
-        let rectInView = self.view.convert(rect, from: nil)
-        guard rectInView.maxY >=~ self.view.bounds.height else { return 0 } // Undocked keyboard
+        let rectInView = self.view.convert(rect, from: nil).offsetBy(dx: 0, dy:offsetY)
+        
+        
         return max(0, self.view.bounds.height - rectInView.minY - self.keyboardTrackerView.intrinsicContentSize.height)
     }
+
+//    private func bottomConstraintFromNotification(_ notification: Notification) -> CGFloat {
+//        guard let rect = ((notification as NSNotification).userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return 0 }
+//        guard rect.height > 0 else { return 0 }
+//        let rectInView = self.view.convert(rect, from: nil)
+//        guard rectInView.maxY >=~ self.view.bounds.height else { return 0 } // Undocked keyboard
+//        return max(0, self.view.bounds.height - rectInView.minY - self.keyboardTrackerView.intrinsicContentSize.height)
+//    }
 
     private func bottomConstraintFromTrackingView() -> CGFloat {
         guard self.keyboardTrackerView.superview != nil else { return 0 }
