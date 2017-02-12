@@ -70,6 +70,7 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
     deinit {
         self.collectionView?.delegate = nil
         self.collectionView?.dataSource = nil
+        notificationCenter.removeObserver(self)
     }
 
     open override func loadView() {
@@ -138,7 +139,14 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
     var onAllBatchUpdatesFinished: (() -> Void)?
 
     private var inputContainerBottomConstraint: NSLayoutConstraint!
+    private var inputViewBottomConstraint: NSLayoutConstraint!
+    
     private func addInputViews() {
+        
+        initiatedWithOffset = UIApplication.shared.statusBarFrame.height == 40
+        
+        let statusbarOffset = UIApplication.shared.statusBarFrame.height - 20
+        
         self.inputContainer = UIView(frame: CGRect.zero)
         self.inputContainer.autoresizingMask = UIViewAutoresizing()
         self.inputContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -153,7 +161,10 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
         self.inputContainer.addSubview(inputView)
         self.inputContainer.addConstraint(NSLayoutConstraint(item: self.inputContainer, attribute: .top, relatedBy: .equal, toItem: inputView, attribute: .top, multiplier: 1, constant: 0))
         self.inputContainer.addConstraint(NSLayoutConstraint(item: self.inputContainer, attribute: .leading, relatedBy: .equal, toItem: inputView, attribute: .leading, multiplier: 1, constant: 0))
-        self.inputContainer.addConstraint(NSLayoutConstraint(item: self.inputContainer, attribute: .bottom, relatedBy: .equal, toItem: inputView, attribute: .bottom, multiplier: 1, constant: 0))
+        
+        self.inputViewBottomConstraint = NSLayoutConstraint(item: self.inputContainer, attribute: .bottom, relatedBy: .equal, toItem: inputView, attribute: .bottom, multiplier: 1, constant: statusbarOffset)
+        
+        self.inputContainer.addConstraint(inputViewBottomConstraint)
         self.inputContainer.addConstraint(NSLayoutConstraint(item: self.inputContainer, attribute: .trailing, relatedBy: .equal, toItem: inputView, attribute: .trailing, multiplier: 1, constant: 0))
     }
 
@@ -161,6 +172,9 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
     open func setupKeyboardTracker() {
         let layoutBlock = { [weak self] (bottomMargin: CGFloat) in
             guard let sSelf = self else { return }
+            
+            
+            
             sSelf.isAdjustingInputContainer = true
             sSelf.inputContainerBottomConstraint.constant = max(bottomMargin, sSelf.bottomLayoutGuide.length)
             sSelf.view.layoutIfNeeded()
@@ -168,6 +182,39 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
         }
         self.keyboardTracker = KeyboardTracker(viewController: self, inputContainer: self.inputContainer, layoutBlock: layoutBlock, notificationCenter: self.notificationCenter)
         (self.view as? BaseChatViewControllerView)?.bmaInputAccessoryView = self.keyboardTracker?.trackingView
+        
+        setupStatusbarTracker()
+    }
+    
+    open func setupStatusbarTracker() {
+        notificationCenter.addObserver(self, selector: #selector(statusBarHeightWillChange), name: NSNotification.Name.UIApplicationWillChangeStatusBarFrame, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(statusBarHeightDidChanged), name: NSNotification.Name.UIApplicationDidChangeStatusBarFrame, object: nil)
+    }
+    
+    var adjustment = 0
+    var oldStatusBarFrame = UIApplication.shared.statusBarFrame
+    var initiatedWithOffset = false
+    
+    public func statusBarHeightWillChange(notification:NSNotification) {
+        
+    }
+    
+    func statusBarHeightDidChanged(notification:NSNotification) {
+        
+        
+        if (UIApplication.shared.statusBarFrame.height  == 40 && initiatedWithOffset) {
+            adjustment = 20
+        } else  if (UIApplication.shared.statusBarFrame.height  == 40 && oldStatusBarFrame.size.height == 20) {
+            adjustment = 0
+        } else if  (UIApplication.shared.statusBarFrame.height  == 20 && oldStatusBarFrame.size.height == 40)
+        {
+            adjustment = 20
+        }
+        
+        
+        self.inputViewBottomConstraint.constant = CGFloat(adjustment)
+        
+        oldStatusBarFrame = UIApplication.shared.statusBarFrame
     }
 
     var notificationCenter = NotificationCenter.default
