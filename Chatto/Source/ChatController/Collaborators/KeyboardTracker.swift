@@ -54,7 +54,7 @@ class KeyboardTracker {
 
     typealias LayoutBlock = (_ bottomMargin: CGFloat) -> Void
     private var layoutBlock: LayoutBlock
-
+    var initiatedWithOffset = false
     init(viewController: UIViewController, inputContainer: UIView, layoutBlock: @escaping LayoutBlock, notificationCenter: NotificationCenter) {
         self.view = viewController.view
         self.layoutBlock = layoutBlock
@@ -64,6 +64,8 @@ class KeyboardTracker {
         self.notificationCenter.addObserver(self, selector: #selector(KeyboardTracker.keyboardDidShow(_:)), name: NSNotification.Name.UIKeyboardDidShow, object: nil)
         self.notificationCenter.addObserver(self, selector: #selector(KeyboardTracker.keyboardWillHide(_:)), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
         self.notificationCenter.addObserver(self, selector: #selector(KeyboardTracker.keyboardWillChangeFrame(_:)), name: NSNotification.Name.UIKeyboardWillChangeFrame, object: nil)
+        
+        initiatedWithOffset = UIApplication.shared.statusBarFrame.height == 40
     }
 
     deinit {
@@ -117,8 +119,26 @@ class KeyboardTracker {
         self.layoutInputAtBottom()
     }
     
+    var oldStatusBarFrame = UIApplication.shared.statusBarFrame
+    
+    private func getOffset() -> CGFloat {
+        
+        var adjustment:CGFloat = 0
+        
+        if (UIApplication.shared.statusBarFrame.height  == 40 && initiatedWithOffset) {
+            adjustment = 20
+        } else  if (UIApplication.shared.statusBarFrame.height  == 40 && oldStatusBarFrame.size.height == 20) {
+            adjustment = 0
+        } else if  (UIApplication.shared.statusBarFrame.height  == 20 && oldStatusBarFrame.size.height == 40)
+        {
+            adjustment = 20
+        }
+        
+        return adjustment
+    }
+    
     private func bottomConstraintFromNotification(_ notification: Notification) -> CGFloat {
-        let offsetY = UIApplication.shared.statusBarFrame.height - 20
+        let offsetY = getOffset()
         guard let rect = ((notification as NSNotification).userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return 0 }
         guard rect.height > 0 else { return 0 }
         let rectInView = self.view.convert(rect, from: nil).offsetBy(dx: 0, dy:offsetY)
