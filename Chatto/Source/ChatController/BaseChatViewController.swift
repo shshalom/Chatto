@@ -177,6 +177,17 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
             
             sSelf.isAdjustingInputContainer = true
             sSelf.inputContainerBottomConstraint.constant = max(bottomMargin, sSelf.bottomLayoutGuide.length)
+            
+            print("keyboardTracker update: \(bottomMargin)")
+            
+            if bottomMargin == 0 {
+                sSelf.inputViewBottomConstraint.constant = 0
+            }
+            
+            if sSelf.initiatedWithOffset {
+                sSelf.inputViewBottomConstraint.constant = 20
+            }
+            
             sSelf.view.layoutIfNeeded()
             sSelf.isAdjustingInputContainer = false
         }
@@ -211,8 +222,9 @@ open class BaseChatViewController: UIViewController, UICollectionViewDataSource,
             adjustment = 20
         }
         
-        
-        self.inputViewBottomConstraint.constant = CGFloat(adjustment)
+        if keyboardTracker.keyboardStatus != .hidden && !initiatedWithOffset {
+            self.inputViewBottomConstraint.constant = UIApplication.shared.statusBarFrame.height - 20 // CGFloat(adjustment)
+        }
         
         oldStatusBarFrame = UIApplication.shared.statusBarFrame
     }

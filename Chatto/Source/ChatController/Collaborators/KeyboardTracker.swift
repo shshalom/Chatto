@@ -26,13 +26,13 @@ import Foundation
 
 class KeyboardTracker {
 
-    private enum KeyboardStatus {
+    public enum KeyboardStatus {
         case hidden
         case showing
         case shown
     }
 
-    private var keyboardStatus: KeyboardStatus = .hidden
+    public var keyboardStatus: KeyboardStatus = .hidden
     private let view: UIView
     var trackingView: UIView {
         return self.keyboardTrackerView
@@ -141,7 +141,7 @@ class KeyboardTracker {
         let offsetY = getOffset()
         guard let rect = ((notification as NSNotification).userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return 0 }
         guard rect.height > 0 else { return 0 }
-        let rectInView = self.view.convert(rect, from: nil)
+        let rectInView = self.view.convert(rect, from: nil).offsetBy(dx: 0, dy:offsetY)
         guard rectInView.maxY >=~ self.view.bounds.height else { return 0 } // Undocked keyboard
         return max(0, self.view.bounds.height - rectInView.minY - self.keyboardTrackerView.intrinsicContentSize.height)
     }
